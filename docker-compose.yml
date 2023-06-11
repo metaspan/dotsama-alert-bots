@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  dock-alert-bot:
+    image: dock-alert-bot
+    container_name: dock-alert-bot
+    build:
+      context: ./dock-alert-bot
+      dockerfile: ../Dockerfile
+    # the bot does not need to be exposed to the outside world
+    # ports:
+    #   - 3000:3000
+    volumes:
+      - ./state/dock-state.json:/home/app/state.json
+    environment:
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL}
+      RPC_URL: ${DOCK_RPC_URL}
+      BOT_TOKEN: ${DOCK_BOT_TOKEN}
+      APP_ID: ${DOCK_APP_ID}
+      PUBLIC_KEY: ${DOCK_PUBLIC_KEY}
+      CHANNEL_ID: ${DOCK_CHANNEL_ID}
+
+  kusama-1kv-alert-bot:
+    image: kusama-1kv-alert-bot
+    container_name: kusama-1kv-alert-bot
+    build:
+      context: ./kusama-1kv-alert-bot
+      dockerfile: ../Dockerfile
+    # the bot does not need to be exposed to the outside world
+    # ports:
+    #   - 3000:3000
+    volumes:
+      - ./state/kusama-state.json:/home/app/state.json
+    environment:
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL}
+      RPC_URL: ${KUSAMA_RPC_URL}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      CANDIDATES_URL: ${KUSAMA_CANDIDATES_URL}
+      NOMINATORS_URL: ${KUSAMA_NOMINATORS_URL}
+      BOT_TOKEN: ${KUSAMA_BOT_TOKEN}
+      APP_ID: ${KUSAMA_APP_ID}
+      PUBLIC_KEY: ${KUSAMA_PUBLIC_KEY}
+      CHANNEL_ID: ${KUSAMA_CHANNEL_ID}
+
+  polkadot-1kv-alert-bot:
+    image: polkadot-1kv-alert-bot
+    container_name: polkadot-1kv-alert-bot
+    build:
+      context: ./polkadot-1kv-alert-bot
+      dockerfile: ../Dockerfile
+    # the bot does not need to be exposed to the outside world
+    # ports:
+    #   - 3000:3000
+    volumes:
+      - ./state/polkadot-state.json:/home/app/state.json
+    environment:
+      UPDATE_INTERVAL: ${UPDATE_INTERVAL}
+      RPC_URL: ${POLKADOT_RPC_URL}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      CANDIDATES_URL: ${POLKADOT_CANDIDATES_URL}
+      NOMINATORS_URL: ${POLKADOT_NOMINATORS_URL}
+      BOT_TOKEN: ${POLKADOT_BOT_TOKEN}
+      APP_ID: ${POLKADOT_APP_ID}
+      PUBLIC_KEY: ${POLKADOT_PUBLIC_KEY}
+      CHANNEL_ID: ${POLKADOT_CHANNEL_ID}
+

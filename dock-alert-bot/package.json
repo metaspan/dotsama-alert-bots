@@ -1,0 +1,29 @@
+{
+  "name": "dock-alert-bot",
+  "version": "1.0.0",
+  "description": "Dock.io alert bot",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/metaspan/dock-alert-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/metaspan/dock-alert-bot/issues"
+  },
+  "homepage": "https://github.com/metaspan/dock-alert-bot#readme",
+  "dependencies": {
+    "@docknetwork/sdk": "^2.10.0",
+    "axios": "^1.3.3",
+    "bullmq": "^3.7.2",
+    "dotenv": "^16.0.3",
+    "eris": "^0.17.1",
+    "moment-timezone": "^0.5.40"
+  }
+}
