@@ -30,7 +30,7 @@ const q_w3f_nominators_update = new Queue('w3f_nominators_update', qOpts)
 const q_w3f_nominations_update = new Queue('w3f_nominations_update', qOpts)
 const q_w3f_validators_update = new Queue('w3f_validators_update', qOpts)
 
-import state from './state.json' assert { type: 'json' }
+import state from '../state/polkadot-state.json' assert { type: 'json' }
 // let exampleState = { 
 //     updatedAt: moment(),
 //     candidates: [], // this from 'https://kusama.w3f.community/candidates'

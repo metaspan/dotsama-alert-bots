@@ -8,11 +8,16 @@ import { DockAPI } from '@docknetwork/sdk'
 const dock = new DockAPI()
 
 import { Queue, Job } from 'bullmq'
+
+import config from './config.js'
+console.log(config)
+
+
 const qOpts = {
   // connection to Redis
   connection: {
-    host: "192.168.1.38",
-    port: 6379
+    host: config.redis_host,
+    port: config.redis_port,
   }
 };
 const jobRetention = {
@@ -26,11 +31,7 @@ const jobRetention = {
 };
 const q_dock_auto_payout = new Queue('dock_auto_payout', qOpts)
 
-import config from './config.js'
-// console.log(config)
-// const INTERVAL = 15 * 1000
-
-import state from './state.json' assert { type: 'json' }
+import state from '../state/dock-state.json' assert { type: 'json' }
 // let exampleState = { 
 //   updatedAt: moment(),
 //   candidates: [], // this from 'https://kusama.w3f.community/candidates'
