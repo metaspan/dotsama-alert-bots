@@ -30,6 +30,7 @@ const q_w3f_exposures_update  = new Queue('w3f_exposures_update', qOpts)
 const q_w3f_nominators_update = new Queue('w3f_nominators_update', qOpts)
 const q_w3f_nominations_update = new Queue('w3f_nominations_update', qOpts)
 const q_w3f_validators_update = new Queue('w3f_validators_update', qOpts)
+const q_check_pool = new Queue('check_pool', qOpts)
 
 import state from '../state/kusama-state.json' assert { type: 'json' }
 // let exampleState = { 
@@ -274,6 +275,7 @@ bot.on('error', (err) => {
               q_w3f_nominators_update.add('w3f_nominators_kusama2', { CHAIN: 'kusama', trigger: 'session.NewSession' }, { repeat: false, ...jobRetention }),
               q_w3f_nominations_update.add('w3f_nominations_kusama2', { CHAIN: 'kusama', trigger: 'session.NewSession' }, { repeat: false, ...jobRetention }),
               q_w3f_validators_update.add('w3f_validators_kusama2', { CHAIN: 'kusama', trigger: 'session.NewSession' }, { repeat: false, ...jobRetention }),
+              q_check_pool.add('check_pool:kusama', { chainId: 'kusama', poolAddress: 'F3opxRbN5ZavB4LTn2JaUnScQc7G7G177CPnqjBpa9F9Gdr' }, { repeat: false, ...jobRetention }),
             ])
             bot.createMessage(
               config.channel_id, // send to me 
@@ -294,7 +296,7 @@ bot.on('error', (err) => {
             "index":"0x0701",
             "data":["144J3aDZgiCZ2X8aiPZ6HKuds3Zn6HNkkSQVNkWtHAgxYae7",3084992450]
           }
-          const stash = event.data[0]
+          const stash = event.data[0].toString()
           const amount = event.data[1]
           state.subscribers.forEach(sub => {
           // const c = state.candidates.find(f => f.stash === stash)
@@ -306,9 +308,9 @@ bot.on('error', (err) => {
                 sub.channel.id,
                 'staking.Reward:'
                 + ` at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-                + `\t (phase=${phase.toString()})`
-                + `\t ${event.toString()}`
-              )
+                // + `\t (phase=${phase.toString()})`
+                + `\n${stash}: ${amount/1000000000000} KSM`
+          )
             } catch (err) {
               bot.createMessage(
                 // '994441486575869952',

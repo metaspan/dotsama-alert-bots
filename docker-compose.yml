@@ -11,10 +11,12 @@ services:
     # ports:
     #   - 3000:3000
     volumes:
-      - ./state/dock-state.json:/home/app/state.json
+      - ./state/dock-state.json:/home/state/dock-state.json
     environment:
       UPDATE_INTERVAL: ${UPDATE_INTERVAL}
       RPC_URL: ${DOCK_RPC_URL}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
       BOT_TOKEN: ${DOCK_BOT_TOKEN}
       APP_ID: ${DOCK_APP_ID}
       PUBLIC_KEY: ${DOCK_PUBLIC_KEY}
@@ -30,7 +32,7 @@ services:
     # ports:
     #   - 3000:3000
     volumes:
-      - ./state/kusama-state.json:/home/app/state.json
+      - ./state/kusama-state.json:/home/state/kusama-state.json
     environment:
       UPDATE_INTERVAL: ${UPDATE_INTERVAL}
       RPC_URL: ${KUSAMA_RPC_URL}
@@ -53,7 +55,7 @@ services:
     # ports:
     #   - 3000:3000
     volumes:
-      - ./state/polkadot-state.json:/home/app/state.json
+      - ./state/polkadot-state.json:/home/state/polkadot-state.json
     environment:
       UPDATE_INTERVAL: ${UPDATE_INTERVAL}
       RPC_URL: ${POLKADOT_RPC_URL}

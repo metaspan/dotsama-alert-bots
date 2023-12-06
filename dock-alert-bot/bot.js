@@ -2,10 +2,14 @@ import { Client } from 'eris'
 import axios from 'axios'
 import moment from 'moment-timezone'
 import fs from 'fs'
-import { ApiPromise, WsProvider } from '@polkadot/api'
+// import { ApiPromise, WsProvider } from '@polkadot/api' // get all data from the rest-api
 import { Candidate } from './candidate.js'
 import { DockAPI } from '@docknetwork/sdk'
 const dock = new DockAPI()
+const stateFile = '../state/dock-state.json'
+
+// TODO: use this as a param .env?
+const apiUrlBase = 'http://192.168.1.92:3000/polkadot/rpc/system/properties'
 
 import { Queue, Job } from 'bullmq'
 
@@ -31,7 +35,9 @@ const jobRetention = {
 };
 const q_dock_auto_payout = new Queue('dock_auto_payout', qOpts)
 
-import state from '../state/dock-state.json' assert { type: 'json' }
+// import state from `stateFile` assert { type: 'json' };
+var state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'))
+console.debug('state', JSON.stringify(state, null, 2))
 // let exampleState = { 
 //   updatedAt: moment(),
 //   candidates: [], // this from 'https://kusama.w3f.community/candidates'
@@ -44,7 +50,9 @@ import state from '../state/dock-state.json' assert { type: 'json' }
 //   ]
 // }
 function saveState() {
-  fs.writeFileSync('state.json', JSON.stringify(state, null, 4), 'utf8')
+  const str = JSON.stringify(state, null, 2)
+  console.log('saving state', str)
+  fs.writeFileSync(stateFile, str, 'utf8')
 }
 
 function slog(text) {
@@ -63,10 +71,10 @@ function composeStatusMessage(subscriber, candidate) {
       moment: moment()
     }, {}, 4)
     : `${candidate.name} \n`
-      + `active: ${candidate.active ? '🚀' : '💤'} `
-      + `nominated: ${candidate.nominated ? '💰' : '🫙'} `
-      + `valid: ${candidate.valid ? '👌' : '🛑'} `
-      + `queued: ${candidate.queued ? '⏭️' : '⏸️'}`
+      + `act.: ${candidate.active ? '🚀' : '💤'} `
+      + `nom.: ${candidate.nominated ? '💰' : '🫙'} `
+      + `val.: ${candidate.valid ? '👌' : '🛑'} `
+      + `que.: ${candidate.queued ? '⏭️' : '⏸️'}`
   return message
 }
 
@@ -84,7 +92,7 @@ const helpText = 'Here is the list of commands I understand:\n'
   + '  `!list` - list your subscriptions\n'
   + '  `!format json|pretty` - set your message format\n'
   + '  `!interval [3600]` - get|set message interval (seconds)\n'
-  + '  `!sub` <validator stash> - subscribe to alerts\n'
+  + '  `!sub` <validator stash> [<role>] - subscribe to alerts, role: account (default), validator\n'
   + '  `!once` <validator stash> - get data once\n'
   + '  `!unsub` <validator stash> - unsubscribe from alerts\n'
   + '  `!leave` - remove all data\n'
@@ -99,6 +107,7 @@ function handleMessage (msg) {
   // const stash = parts[2]
   // console.debug(`"${cmd}" "${module}" "${stash}"`)
   let stash
+  let role
   let idx
   let c, sub
   switch (cmd) {
@@ -110,7 +119,13 @@ function handleMessage (msg) {
       break
     case '!list':
       let s = state.subscribers.find(f => f.id === msg.author.id)
-      let message = s ? JSON.stringify(s.targets) : 'None' 
+      let message = s 
+        // ? JSON.stringify(s.targets) 
+        ? '----\n' + s.targets.map(t => {
+          return `${(t.role || 'account') === 'account' ? '💰' : '🚀'}: ${t.stash}`
+        }).join('\n')
+        : 'None' 
+      console.debug(message)
       bot.createMessage(msg.channel.id, message)
       break
     case '!leave':
@@ -170,6 +185,7 @@ function handleMessage (msg) {
       //   return
       // }
       stash = parts[1]
+      role = parts[2] || 'account' // 'validator'
       if (!stash || stash === '') {
         bot.createMessage(msg.channel.id, `invalid stash '${stash||''}'\ntry !sub <stash>`)
         return
@@ -178,15 +194,16 @@ function handleMessage (msg) {
       if (idx > -1) {
         let t = state.subscribers[idx].targets.find(f => f.stash === stash)
         if (t) {
-          bot.createMessage(msg.channel.id, `already subscribed to ${stash}`)
+          bot.createMessage(msg.channel.id, `already subscribed to ${t.stash} ${t.role}`)
         } else {
-          state.subscribers[idx].targets.push({stash: stash})
-          bot.createMessage(msg.channel.id, `subscribed to ${stash}, interval ${state.subscribers[idx].interval} seconds`)
+          state.subscribers[idx].targets.push({ stash, role })
+          bot.createMessage(msg.channel.id, `subscribed to ${stash}/${role}, interval ${state.subscribers[idx].interval} seconds`)
         }
       } else {
-        state.subscribers.push({id: msg.author.id, interval: 3600, channel: {id: msg.channel.id}, targets: [{stash: stash}]})
-        bot.createMessage(msg.channel.id, `subscribed to ${stash}, interval 3600 seconds`)
+        state.subscribers.push({id: msg.author.id, interval: 3600, channel: {id: msg.channel.id}, targets: [{ stash, role }]})
+        bot.createMessage(msg.channel.id, `subscribed to ${stash}/${role}, interval 3600 seconds`)
       }
+      console.log('state', state)
       saveState()
       break
     case '!unsub':
@@ -247,7 +264,7 @@ bot.on('error', (err) => {
   console.warn(err);
 });
 
-(async () => {
+;(async () => {
   // const wsProvider = new WsProvider(config.validator_url)
   // const api = await ApiPromise.create({ provider: wsProvider })
   await dock.init({ address: config.rpc_url })
@@ -257,6 +274,7 @@ bot.on('error', (err) => {
   // console.log(methods.toString())
   // note, methods != events !!
 
+  // subscribe to all events
   api.query.system.events(async (events) => {
     slog(`Received ${events.length} events:`)
 
@@ -293,21 +311,25 @@ bot.on('error', (err) => {
               "index":"0x0701",
               "data":["144J3aDZgiCZ2X8aiPZ6HKuds3Zn6HNkkSQVNkWtHAgxYae7",3084992450]
             }
-            const stash = event.data[0]
+            const stash = event.data[0].toString()
             const amount = event.data[1]
             state.subscribers.forEach(sub => {
               console.log(`Checking reward for ${stash} against targets`, sub.targets.map(t => t.stash))
               // const c = state.candidates.find(f => f.stash === stash)
               const tidx = sub.targets.findIndex(t => t.stash === stash)
+              // console.debug('stash', stash)
+              // console.debug('tidx', tidx)
+              // console.debug('targets', sub.targets)
               if (tidx > -1) {
                 // const t = sub.targets[stash]
                 try {
+                  const [] = event.data
                   bot.createMessage(
                     sub.channel.id, // back to subscriber
                     'staking.Reward:'
                     + ` at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-                    + `\t (phase=${phase.toString()})`
-                    + `\t ${event.toString()}`
+                    // + `\t (phase=${phase.toString()})`
+                    + `\n${stash}: ${amount/1000000} DOCK`
                   )
                 } catch (err) {
                   bot.createMessage(
@@ -405,113 +427,67 @@ bot.on('error', (err) => {
 
   }) // End of Event Loop
 
+  // every 10 mins: check if s.target is a validator...
   setInterval(async () => {
-    slog('=== Interval starts...')
-    // do we have any subscribers that need updated candidates data?
-    var refreshNeeded = state.subscribers.findIndex(sub => {
-      let age = moment().diff(moment(sub.updatedAt), 'seconds')
-      return (age > sub.interval)
-    })
-    // if (!state.updatedAt || moment().diff(state.updatedAt, 'seconds') > 60) {
-    slog(`refreshNeeded = ${refreshNeeded}`)
-    if (refreshNeeded > -1 && moment().diff(state.updatedAt, 'seconds') > 60) { // 10 mins should be fresh enough
-      slog('Updating candidates...')
-      try {
-        // const res = await axios.get('https://kusama.w3f.community/candidates')
-        const res = await axios.get(config.candidates_url)
-        if (res.data) {
-          if (res.data.updatedAt) {
-            // we're getting from our own cache
-            state.candidates = res.data.candidates
-            state.updatedAt = res.data.updatedAt
-          } else {
-            // we're getting from upstream
-            state.candidates = res.data
-            state.updatedAt = moment()  
-          }
-          saveState()
-        } else {
-          slog(res)
-        }
-      } catch (err) {
-        slog('AXIOS error: ' + JSON.stringify(err.res ? err.res : err))
-        console.debug(err)
-      }
-      // check if candidates are nominated
-      try {
-        const res = await axios.get(config.nominators_url)
-        if (res.data) {
-          state.nominators = res.data
-          state.nominators.forEach(n => {
-            n.current.forEach(c => {
-              const idx = state.candidates.findIndex(f => f.stash === c.stash)
-              state.candidates[idx].nominated = (idx > -1) ? true : false
-            })
-          })
-          saveState()
-        }
-      } catch (err) {
-        // slog(res)
-        slog('Error fetching nominators')
-        console.error(err)
-      }
-      // check if candidates are queued for next session
-      slog('Checking if queued for next session')
-      try {
-        // const wsProvider = new WsProvider('wss://kusama-rpc.polkadot.io')
-        const wsProvider = new WsProvider(config.validator_url)
-        const api = await ApiPromise.create({ provider: wsProvider })
-        const keys = await api.query.session.queuedKeys()
-        keys.forEach((k, idx) => {
-          const stash = k.toJSON()[0]
-          idx = state.candidates.findIndex(f => f.stash === stash)
-          if (idx > -1) {
-            state.candidates[idx].queued = true
-          }
-        })
-        await api.disconnect()
-      } catch (err) {
-        console.debug(err)
-      }
-    }
-    slog('Checking subscribers: '+ state.subscribers.length)
-    let updated = false
-    state.subscribers.forEach((sub, idx) => {
-      let age = moment().diff(moment(sub.updatedAt), 'seconds')
-      slog(`id: ${sub.id}, age: ${age}, updateAt ${sub.updatedAt}`)
-      if (sub.updatedAt === '' || sub.updatedAt === undefined || age > sub.interval) {
-        sub.targets?.forEach( t => {
-        const c = new Candidate(state.candidates.find(c => c.stash === t.stash))
-        if (c) {
-          // // const wasValid = c.valid
-          const val_check = c.validity.filter(f => !f.valid)
-          // if (!c.valid) {
-          //   // check validity
-          //   bot.createMessage(
-          //   '983358544650858507',
-          //   'INVALID: '
-          //   + '- ' + moment().format('YYYY.MM.DD HH:mm:ss') + ': \n'
-          //   + '- ' + c.stash + ' \n'
-          //   + JSON.stringify(c.valid) + ' \n'
-          //   + JSON.stringify(c.validity) + ' \n'
-          //   + JSON.stringify(c.invalidityReasons)
-          //   )
-    
-          //   if (val_check.length == 0) c.valid = true
-          // }
-          c.valid = val_check.length === 0
-          let message = composeStatusMessage(sub, c)
-          bot.createMessage(sub.channel.id, message)
-          if (!c.valid) bot.createMessage(sub.channel.id, JSON.stringify(val_check, null, 4))
+    const result = await axios.get(`http://192.168.1.92:3000/dock/query/staking/validators`)
+    const validators = result.data.validators || []
+    // for each subscriber
+    state.subscribers.forEach(async (sub) => {
+      // filter targets for validators only
+      sub.targets.filter(f => f.role === 'validator').forEach(async (t) => {
+        const idx = validators.findIndex(f => f.stash === t.stash)
+        if(idx === -1) {
+          // not a validator, send a warning!
+          const message = `⚠️ Stash ${t.stash} is not a validator`
+          await bot.createMessage(sub.channel.id, message)
+        // } else {
+        //   const message = `🌟 Stash ${t.stash} is a validator`
+        //   await bot.createMessage(sub.channel.id, message)
         }
       })
-      state.subscribers[idx].updatedAt = moment()
-      updated = true
-    }
-  })
-  if (updated) saveState()
-    slog('=== Interval ends...')
-  }, config.update_interval)
+    })
+  }, 10 * 60 * 1000) // every 10 mins
+
+  // main interval loop...
+  // setInterval(async () => {
+  //   slog('=== Interval starts...')
+  //   slog('Checking subscribers: '+ state.subscribers.length)
+  //   let updated = false
+  //   state.subscribers.forEach((sub, idx) => {
+  //     let age = moment().diff(moment(sub.updatedAt), 'seconds')
+  //     slog(`id: ${sub.id}, age: ${age}, updateAt ${sub.updatedAt}`)
+  //     if (sub.updatedAt === '' || sub.updatedAt === undefined || age > sub.interval) {
+  //       sub.targets?.filter(f => f.role === 'validator').forEach(t => {
+  //         const c = new Candidate(state.candidates.find(c => c.stash === t.stash))
+  //         if (c) {
+  //           // // const wasValid = c.valid
+  //           const val_check = c.validity.filter(f => !f.valid)
+  //           // if (!c.valid) {
+  //           //   // check validity
+  //           //   bot.createMessage(
+  //           //   '983358544650858507',
+  //           //   'INVALID: '
+  //           //   + '- ' + moment().format('YYYY.MM.DD HH:mm:ss') + ': \n'
+  //           //   + '- ' + c.stash + ' \n'
+  //           //   + JSON.stringify(c.valid) + ' \n'
+  //           //   + JSON.stringify(c.validity) + ' \n'
+  //           //   + JSON.stringify(c.invalidityReasons)
+  //           //   )
+  //           //   if (val_check.length == 0) c.valid = true
+  //           // }
+  //           c.valid = val_check.length === 0
+  //           let message = composeStatusMessage(sub, c)
+  //           bot.createMessage(sub.channel.id, message)
+  //           if (!c.valid) bot.createMessage(sub.channel.id, JSON.stringify(val_check, null, 4))
+  //         }
+  //       })
+  //       state.subscribers[idx].updatedAt = moment()
+  //       updated = true
+  //     }
+  //   })
+  //   if (updated) saveState()
+  //   slog('=== Interval ends...')
+  // }, config.update_interval) // setInterval
   
   bot.connect()
 

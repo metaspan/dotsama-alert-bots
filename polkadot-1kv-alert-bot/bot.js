@@ -29,6 +29,7 @@ const q_w3f_exposures_update  = new Queue('w3f_exposures_update', qOpts)
 const q_w3f_nominators_update = new Queue('w3f_nominators_update', qOpts)
 const q_w3f_nominations_update = new Queue('w3f_nominations_update', qOpts)
 const q_w3f_validators_update = new Queue('w3f_validators_update', qOpts)
+const q_check_pool = new Queue('check_pool', qOpts)
 
 import state from '../state/polkadot-state.json' assert { type: 'json' }
 // let exampleState = { 
@@ -277,12 +278,13 @@ bot.on('error', (err) => {
               q_w3f_nominators_update.add('w3f_nominators_polkadot2', { CHAIN: 'polkadot', trigger: 'session.NewSession' }, { repeat: false, ...jobRetention }),
               q_w3f_nominations_update.add('w3f_nominations_polkadot2', { CHAIN: 'polkadot', trigger: 'session.NewSession' }, { repeat: false, ...jobRetention }),
               q_w3f_validators_update.add('w3f_validators_polkadot2', { CHAIN: 'polkadot', trigger: 'session.NewSession' }, { repeat: false, ...jobRetention }),
+              q_check_pool.add('check_pool:polkadot', { chainId: 'polkadot', poolAddress: '13UVJyLnbVp8c4FQeiGDrYotodEcyAzE8tipNEMc61UBJAH4' }, { repeat: false, ...jobRetention }),
             ])
             bot.createMessage(
               config.channel_id, // send to me 
               `Created new jobs `
                 + `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-                + JSON.stringify(jobs)
+                + ` raised ${jobs.length} jobs`
             )
             break
           default:
@@ -298,7 +300,7 @@ bot.on('error', (err) => {
             "index":"0x0701",
             "data":["144J3aDZgiCZ2X8aiPZ6HKuds3Zn6HNkkSQVNkWtHAgxYae7",3084992450]
           }
-          const stash = event.data[0]
+          const stash = event.data[0].toString()
           const amount = event.data[1]
           state.subscribers.forEach(sub => {
             // const c = state.candidates.find(f => f.stash === stash)
@@ -309,9 +311,9 @@ bot.on('error', (err) => {
                   // '994441486575869952',
                   sub.channel.id,
                   'staking.Reward:'
-                    + ` at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-                    + `\t (phase=${phase.toString()})`
-                    + `\t ${event.toString()}`
+                  + ` at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
+                  // + `\t (phase=${phase.toString()})`
+                  + `\n${stash}: ${amount/10000000000} DOT`
                 )
               } catch (err) {
                 bot.createMessage(
@@ -402,12 +404,22 @@ bot.on('error', (err) => {
         const res = await axios.get(config.nominators_url)
         if (res.data) {
           state.nominators = res.data
-          state.nominators.forEach(n => {
-            n.current.forEach(c => {
-              const idx = state.candidates.findIndex(f => f.stash === c.stash)
-              state.candidates[idx].nominated = (idx > -1) ? true : false
-            })
-          })
+          // loop througn all candidates
+          for (let idx = 0; idx < state.candidates.length; idx++) {
+            let stash = state.candidates[idx].stash
+            let nominated = false
+            if (state.nominators.find((n) => {
+              // console.debug('checking if', stash, 'is nominated by', n.stash)
+              const nomd = n.current.findIndex(c => c.stash === stash)
+              // if (n.stash === '13EXScyZ9BzjpoiDJJ8UCEhQZcHNCEMv4bTwpzHv6CaJeZPT')
+                // console.debug(stash, (nomd > -1) ? 'is'  : 'is not', 'nominated by', n.stash)
+              return nomd > -1
+            })) {
+              nominated = true
+            }
+            console.debug('stash', stash, 'nominated =', nominated)
+            state.candidates[idx].nominated = nominated
+          }
           saveState()
         }
       } catch (err) {
@@ -441,7 +453,9 @@ bot.on('error', (err) => {
       slog(`id: ${sub.id}, age: ${age}, updateAt ${sub.updatedAt}`)
       if (sub.updatedAt === '' || sub.updatedAt === undefined || age > sub.interval) {
         sub.targets?.forEach( t => {
+          console.debug('Target', t, state.candidates.find(c => c.stash === t.stash))
           const c = new Candidate(state.candidates.find(c => c.stash === t.stash))
+          console.debug('Candidate:', c)
           if (c) {
             // // const wasValid = c.valid
             const val_check = c.validity?.filter(f => !f.valid) || []
