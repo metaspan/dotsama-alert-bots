@@ -329,40 +329,40 @@ bot.on('error', (err) => {
         }
       }
 
-      // api.events.staking.StakersElected.is
-      if (event.section.toUpperCase() === 'STAKERSELECTED'
-      || event.method.toUpperCase() === 'STAKERSELECTED') {
-        // Show what we are busy with
-        slog(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
-        bot.createMessage(
-          // '994441486575869952',
-          config.channel_id, // send message to me
-          'Seems we have Event:'
-            + `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-            + `\t${event.section}:${event.method}:: (phase=${phase.toString()})`
-        )
-        // console.log(`\t\t${event.meta.documentation?.toString()}`)
-    
-        // Loop through each of the parameters, displaying the type and data
-        event.data.forEach((data, index) => {
-            slog(`\t\t\t${types[index].type}: ${data.toString()}`);
-        })
-      // } else {
-      //   console.log(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
-      }
+      //// api.events.staking.StakersElected.is
+      //if (event.section.toUpperCase() === 'STAKERSELECTED'
+      //|| event.method.toUpperCase() === 'STAKERSELECTED') {
+      //  // Show what we are busy with
+      //  slog(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
+      //  bot.createMessage(
+      //    // '994441486575869952',
+      //    config.channel_id, // send message to me
+      //    'Seems we have Event:'
+      //      + `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
+      //      + `\t${event.section}:${event.method}:: (phase=${phase.toString()})`
+      //  )
+      //  // console.log(`\t\t${event.meta.documentation?.toString()}`)
+      //
+      //  // Loop through each of the parameters, displaying the type and data
+      //  event.data.forEach((data, index) => {
+      //      slog(`\t\t\t${types[index].type}: ${data.toString()}`);
+      //  })
+      //// } else {
+      ////   console.log(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
+      //}
 
-      // staking-miner submits electionProviderMultiPhase.submit
-      if (event.section === 'electionProviderMultiPhase') {
-        // && event.method.toUpperCase() === 'SUBMIT') {
-        // console.log(event.section, event.method, phase.toString())
-        console.log(event, phase.toString())
-        bot.createMessage(
-          // '994441486575869952',
-          config.channel_id, // send message to me
-          `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-            + `\t${event.section}:${event.method}:: (phase=${phase.toString()})`
-        )
-      } // end of electionProviderMultiPhase.submit
+      //// staking-miner submits electionProviderMultiPhase.submit
+      //if (event.section === 'electionProviderMultiPhase') {
+      //  // && event.method.toUpperCase() === 'SUBMIT') {
+      //  // console.log(event.section, event.method, phase.toString())
+      //  console.log(event, phase.toString())
+      //  bot.createMessage(
+      //    // '994441486575869952',
+      //    config.channel_id, // send message to me
+      //    `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
+      //      + `\t${event.section}:${event.method}:: (phase=${phase.toString()})`
+      //  )
+      //} // end of electionProviderMultiPhase.submit
       
     })
   })

@@ -324,54 +324,54 @@ bot.on('error', (err) => {
         })
       }}
 
-      if (event.section.toUpperCase() === 'STAKERSELECTED'
-       || event.method.toUpperCase() === 'STAKERSELECTED') {
-        // Show what we are busy with
-        slog(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
-        bot.createMessage(
-          config.channel_id,
-          'Seems we have Event:'
-            + `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-            + `\t${event.section}:${event.method}:: (phase=${phase.toString()})`
-        )
-        // console.log(`\t\t${event.meta.documentation?.toString()}`)
+      //if (event.section.toUpperCase() === 'STAKERSELECTED'
+      // || event.method.toUpperCase() === 'STAKERSELECTED') {
+      //  // Show what we are busy with
+      //  slog(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
+      //  bot.createMessage(
+      //    config.channel_id,
+      //    'Seems we have Event:'
+      //      + `at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
+      //      + `\t${event.section}:${event.method}:: (phase=${phase.toString()})`
+      //  )
+      //  // console.log(`\t\t${event.meta.documentation?.toString()}`)
     
-        // Loop through each of the parameters, displaying the type and data
-        event.data.forEach((data, index) => {
-          slog(`\t\t\t${types[index].type}: ${data.toString()}`);
-        })
-        // } else {
-        //   console.log(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
-      }
+      //  // Loop through each of the parameters, displaying the type and data
+      //  event.data.forEach((data, index) => {
+      //    slog(`\t\t\t${types[index].type}: ${data.toString()}`);
+      //  })
+      //  // } else {
+      //  //   console.log(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
+      //}
 
-      // staking-miner submits electionProviderMultiPhase.submit
-      if (event.section === 'electionProviderMultiPhase') {
-        // && event.method.toUpperCase() === 'SUBMIT') {
-        // console.log(event.section, event.method, phase.toString())
-        console.log(event.toString(), phase.toString())
-        switch (event.method) {
-          case 'ElectionFailed':     // ElectionFailed()
-          case 'ElectionFinalized':  // ElectionFinalized(PalletElectionProviderMultiPhaseElectionCompute, SpNposElectionsElectionScore)
-          // {"index":"0x2501","data":["Signed",{"minimalStake":"0x000000000000000000163325867f3357","sumStake":"0x000000000000000061e9c3af92229491","sumStakeSquared":"0x0009d95026bf45cf04a5bc976b46bc7b"}]}
-          case 'Slashed':            // Slashed(AccountId32, u128)
-            break
-          case 'Rewarded':           // Rewarded(AccountId32, u128)
-          // {"index":"0x2503","data":["H2LjzjkgpyUiNeazaBxVNjTujzUEgCJKGJ5VykHsj3JD5rx",100000000000]}
-          case 'SignedPhaseStarted': // SignedPhaseStarted(u32)
-          // {"index":"0x2505","data":[2301]}
-          case 'SolutionStored':     // SolutionStored(PalletElectionProviderMultiPhaseElectionCompute, bool)
-          // {"index":"0x2500","data":["Signed",false]}
-          case 'UnsignedPhaseStarted': // UnsignedPhaseStarted(u32)
-          // {"index":"0x2506","data":[2301]}
-          default:
-            bot.createMessage(
-              config.channel_id,
-              `${event.section}.${event.method}: at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-                + `\n(phase=${phase.toString()})`
-                + '\n' + JSON.stringify(event)
-            )
-        }
-      } // end of electionProviderMultiPhase.submit
+      //// staking-miner submits electionProviderMultiPhase.submit
+      //if (event.section === 'electionProviderMultiPhase') {
+      //  // && event.method.toUpperCase() === 'SUBMIT') {
+      //  // console.log(event.section, event.method, phase.toString())
+      //  console.log(event.toString(), phase.toString())
+      //  switch (event.method) {
+      //    case 'ElectionFailed':     // ElectionFailed()
+      //    case 'ElectionFinalized':  // ElectionFinalized(PalletElectionProviderMultiPhaseElectionCompute, SpNposElectionsElectionScore)
+      //    // {"index":"0x2501","data":["Signed",{"minimalStake":"0x000000000000000000163325867f3357","sumStake":"0x000000000000000061e9c3af92229491","sumStakeSquared":"0x0009d95026bf45cf04a5bc976b46bc7b"}]}
+      //    case 'Slashed':            // Slashed(AccountId32, u128)
+      //      break
+      //    case 'Rewarded':           // Rewarded(AccountId32, u128)
+      //    // {"index":"0x2503","data":["H2LjzjkgpyUiNeazaBxVNjTujzUEgCJKGJ5VykHsj3JD5rx",100000000000]}
+      //    case 'SignedPhaseStarted': // SignedPhaseStarted(u32)
+      //    // {"index":"0x2505","data":[2301]}
+      //    case 'SolutionStored':     // SolutionStored(PalletElectionProviderMultiPhaseElectionCompute, bool)
+      //    // {"index":"0x2500","data":["Signed",false]}
+      //    case 'UnsignedPhaseStarted': // UnsignedPhaseStarted(u32)
+      //    // {"index":"0x2506","data":[2301]}
+      //    default:
+      //      bot.createMessage(
+      //        config.channel_id,
+      //        `${event.section}.${event.method}: at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
+      //          + `\n(phase=${phase.toString()})`
+      //          + '\n' + JSON.stringify(event)
+      //      )
+      //  }
+      //} // end of electionProviderMultiPhase.submit
 
     })
 
