@@ -4,6 +4,7 @@ services:
   dock-alert-bot:
     image: dock-alert-bot
     container_name: dock-alert-bot
+    restart: unless-stopped
     build:
       context: ./dock-alert-bot
       dockerfile: ../Dockerfile
@@ -24,6 +25,7 @@ services:
 
   kusama-1kv-alert-bot:
     image: kusama-1kv-alert-bot
+    restart: unless-stopped
     container_name: kusama-1kv-alert-bot
     build:
       context: ./kusama-1kv-alert-bot
@@ -47,6 +49,7 @@ services:
 
   polkadot-1kv-alert-bot:
     image: polkadot-1kv-alert-bot
+    restart: unless-stopped
     container_name: polkadot-1kv-alert-bot
     build:
       context: ./polkadot-1kv-alert-bot
