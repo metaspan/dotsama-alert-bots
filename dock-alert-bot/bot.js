@@ -35,6 +35,24 @@ const jobRetention = {
 };
 const q_dock_auto_payout = new Queue('dock_auto_payout', qOpts)
 
+async function createPayoutJob () {
+  return q_dock_auto_payout.add('dock_auto_payout', {
+    wsProvider: 'wss://mainnet-node.dock.io',
+    denom: 'DOCK',
+    decimalPlaces: 6,
+    validators: [
+      '3D6KKyNq3rocxZUjV9ZKrM3gWP6dXKxmV9umCepjbsGBE5di',
+      '3E6NNUnsrTPSRQ59bSBAPf2UVwWawyy4VsYWnHRvf1Z4F2SA'
+    ],
+    // FIXME: move this to secrets or .env, this is a test account, please use your own
+    accountJSON: './functions/keystores/3GgB5XbVKerzR8MXjUDCvWJ3gwiADW8e77gVeC93LEhcU7w7.json',
+    password: 'vsY8wdZTcLRPsLgBz@',
+    log: true,
+  }, {
+    repeat: false, ...jobRetention 
+  })
+}
+
 // import state from `stateFile` assert { type: 'json' };
 var state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'))
 console.debug('state', JSON.stringify(state, null, 2))
@@ -99,7 +117,7 @@ const helpText = 'Here is the list of commands I understand:\n'
   + '  `!ping` - test response\n'
   // + '   - modules: valid | active | all\n'
 
-function handleMessage (msg) {
+async function handleMessage (msg) {
   // const cmd = msg.content.substring(0, str.indexOf(' '))
   const parts = msg.content.split(' ')
   const cmd = parts[0] //.substr(PREFIX.length)
@@ -224,6 +242,10 @@ function handleMessage (msg) {
       } else {
         slog('could not find idx')
       }
+      break
+    case '!payout':
+      const job = await createPayoutJob()
+      bot.createMessage(msg.channel.id, 'payout job triggered')
       break
     default:
       // message.channel.createMessage('Pong!')
@@ -365,44 +387,37 @@ bot.on('error', (err) => {
         }
       }
 
-      //// staking-miner submits electionProviderMultiPhase.submit
-      //if (event.section === 'electionProviderMultiPhase') {
-      //  // && event.method.toUpperCase() === 'SUBMIT') {
-      //  // console.log(event.section, event.method, phase.toString())
-      //  console.log(event.toString(), phase.toString())
-      //  switch (event.method) {
-      //    case 'ElectionFinalized':  // ElectionFinalized(PalletElectionProviderMultiPhaseElectionCompute, SpNposElectionsElectionScore)
-      //      // {"index":"0x2500","data":["Signed",false]}
-      //      const jobs = await Promise.all([
-      //        q_dock_auto_payout.add('dock_auto_payout', {
-      //          wsProvider: 'wss://mainnet-node.dock.io',
-      //          denom: 'DOCK',
-      //          decimalPlaces: 6,
-      //          validators: [
-      //            '3D6KKyNq3rocxZUjV9ZKrM3gWP6dXKxmV9umCepjbsGBE5di',
-      //            '3E6NNUnsrTPSRQ59bSBAPf2UVwWawyy4VsYWnHRvf1Z4F2SA'
-      //          ],
-      //          accountJSON: './functions/keystores/3GgB5XbVKerzR8MXjUDCvWJ3gwiADW8e77gVeC93LEhcU7w7.json',
-      //          password: 'vsY8wdZTcLRPsLgBz@',
-      //          log: true,
-      //        }, { repeat: false, ...jobRetention }),
-      //        // q_dock_auto_payout.add('dock_auto_payout', {
-      //        //   wsProvider: 'wss://mainnet-node.dock.io',
-      //        //   denom: 'DOCK',
-      //        //   decimalPlaces: 6,
-      //        //   validator: '3E6NNUnsrTPSRQ59bSBAPf2UVwWawyy4VsYWnHRvf1Z4F2SA',
-      //        //   accountJSON: './functions/keystores/3GgB5XbVKerzR8MXjUDCvWJ3gwiADW8e77gVeC93LEhcU7w7.json',
-      //        //   password: 'vsY8wdZTcLRPsLgBz@',
-      //        //   log: true,
-      //        // }, { repeat: false, ...jobRetention })
-      //      ])            
-      //      bot.createMessage(
-      //        config.channel_id,
-      //        `${event.section}.${event.method}: at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
-      //          + `\n(phase=${phase.toString()})`
-      //          + `\ncreated ${jobs.length} jobs`
-      //      )
-      //      break
+      // staking-miner submits electionProviderMultiPhase.submit
+      if (event.section === 'electionProviderMultiPhase') {
+        // && event.method.toUpperCase() === 'SUBMIT') {
+        // console.log(event.section, event.method, phase.toString())
+        console.log(event.toString(), phase.toString())
+        switch (event.method) {
+          case 'ElectionFinalized':  // ElectionFinalized(PalletElectionProviderMultiPhaseElectionCompute, SpNposElectionsElectionScore)
+            // {"index":"0x2500","data":["Signed",false]}
+            const job = await createPayoutJob()
+            // const jobs = await Promise.all([
+            //   q_dock_auto_payout.add('dock_auto_payout', {
+            //     wsProvider: 'wss://mainnet-node.dock.io',
+            //     denom: 'DOCK',
+            //     decimalPlaces: 6,
+            //     validators: [
+            //       '3D6KKyNq3rocxZUjV9ZKrM3gWP6dXKxmV9umCepjbsGBE5di',
+            //       '3E6NNUnsrTPSRQ59bSBAPf2UVwWawyy4VsYWnHRvf1Z4F2SA'
+            //     ],
+            //     // FIXME: move this to secrets or .env, this is a test account, please use your own
+            //     accountJSON: './functions/keystores/3GgB5XbVKerzR8MXjUDCvWJ3gwiADW8e77gVeC93LEhcU7w7.json',
+            //     password: 'vsY8wdZTcLRPsLgBz@',
+            //     log: true,
+            //   }, { repeat: false, ...jobRetention }),
+            // ])            
+            bot.createMessage(
+              config.channel_id,
+              `${event.section}.${event.method}: at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
+                + `\n(phase=${phase.toString()})`
+                + `\ncreated 1 job`
+            )
+            break
       //      case 'SolutionStored':     // SolutionStored(PalletElectionProviderMultiPhaseElectionCompute, bool)
       //      case 'ElectionFailed':     // ElectionFailed()
       //      // {"index":"0x2501","data":["Signed",{"minimalStake":"0x000000000000000000163325867f3357","sumStake":"0x000000000000000061e9c3af92229491","sumStakeSquared":"0x0009d95026bf45cf04a5bc976b46bc7b"}]}
@@ -420,8 +435,8 @@ bot.on('error', (err) => {
       //          + `\n(phase=${phase.toString()})`
       //          + '\n' + JSON.stringify(event)
       //      )
-      //  }
-      //} // end of electionProviderMultiPhase.submit
+        }
+      } // end of electionProviderMultiPhase.submit
 
     })
 

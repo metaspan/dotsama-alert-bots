@@ -32,7 +32,9 @@ const q_w3f_nominations_update = new Queue('w3f_nominations_update', qOpts)
 const q_w3f_validators_update = new Queue('w3f_validators_update', qOpts)
 const q_check_pool = new Queue('check_pool', qOpts)
 
-import state from '../state/kusama-state.json' assert { type: 'json' }
+const stateFile = '../state/kusama-state.json'
+var state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'))
+
 // let exampleState = { 
 //   updatedAt: moment(),
 //   candidates: [], // this from 'https://kusama.w3f.community/candidates'
@@ -45,7 +47,7 @@ import state from '../state/kusama-state.json' assert { type: 'json' }
 //   ]
 // }
 function saveState() {
-  fs.writeFileSync('state.json', JSON.stringify(state, null, 4), 'utf8')
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 4), 'utf8')
 }
 
 function slog(text) {
@@ -248,6 +250,18 @@ bot.on('error', (err) => {
   console.warn(err);
 });
 
+function gracefulShutdown() {
+  console.log('Shutting down...');
+  saveState()
+  process.exit();
+}
+
+// gracefully handle shutdown
+// catch ctrl-c and saveState, then exit
+process.on('SIGINT', gracefulShutdown);
+// when running in a container, SIGTERM is the signal to stop
+process.on('SIGTERM', gracefulShutdown);
+
 (async () => {
   const wsProvider = new WsProvider(config.rpc_url)
   const api = await ApiPromise.create({ provider: wsProvider, noInitWarn: true, throwOnConnect: true })
@@ -292,12 +306,15 @@ bot.on('error', (err) => {
       // api.events.staking.StakersElected.is
       if (event.section === 'staking') {
         if (event.method === 'Rewarded') {
-          const ex = {
-            "index":"0x0701",
-            "data":["144J3aDZgiCZ2X8aiPZ6HKuds3Zn6HNkkSQVNkWtHAgxYae7",3084992450]
-          }
+          // const ex = {
+          //   "index":"0x0701",
+          //   "data":["144J3aDZgiCZ2X8aiPZ6HKuds3Zn6HNkkSQVNkWtHAgxYae7",3084992450]
+          // }
+          // const ex2 = ["EUYfsTNCCVJbrq7YjT4xbxWB8GX1j7nRZiuziQVj9mjFSdP",{"controller":null},172022718919]
+          // console.log(JSON.stringify(event.data))
           const stash = event.data[0].toString()
-          const amount = event.data[1]
+          const amount = event.data[2]
+          console.debug(`Rewarded: ${stash} ${amount}`)
           state.subscribers.forEach(sub => {
           // const c = state.candidates.find(f => f.stash === stash)
           if (sub.targets?.find(target => target.stash === stash)) {
@@ -309,7 +326,7 @@ bot.on('error', (err) => {
                 'staking.Reward:'
                 + ` at ${moment().format('YYYY.MM.DD HH:mm:ss')}`
                 // + `\t (phase=${phase.toString()})`
-                + `\n${stash}: ${amount/1000000000000} KSM`
+                + `\n${stash}: ${(amount/1000000000000).toFixed(4)} KSM ${amount}`
           )
             } catch (err) {
               bot.createMessage(
