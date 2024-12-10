@@ -1,5 +1,7 @@
 export class Candidate {
 
-  constructor () {}
+  constructor (dict = {}) {
+    Object.assign(this, dict)
+  }
 
 }

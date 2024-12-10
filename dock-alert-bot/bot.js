@@ -37,7 +37,7 @@ const q_dock_auto_payout = new Queue('dock_auto_payout', qOpts)
 
 async function createPayoutJob () {
   return q_dock_auto_payout.add('dock_auto_payout', {
-    wsProvider: 'wss://mainnet-node.dock.io',
+    wsProvider: config.rpc_url || 'wss://mainnet-node.dock.io',
     denom: 'DOCK',
     decimalPlaces: 6,
     validators: [
@@ -45,8 +45,8 @@ async function createPayoutJob () {
       '3E6NNUnsrTPSRQ59bSBAPf2UVwWawyy4VsYWnHRvf1Z4F2SA'
     ],
     // FIXME: move this to secrets or .env, this is a test account, please use your own
-    accountJSON: './functions/keystores/3GgB5XbVKerzR8MXjUDCvWJ3gwiADW8e77gVeC93LEhcU7w7.json',
-    password: 'vsY8wdZTcLRPsLgBz@',
+    accountJSON: process.env.DOCK_ACCOUNT_JSON,
+    password: process.env.DOCK_ACCOUNT_PASSWORD,
     log: true,
   }, {
     repeat: false, ...jobRetention 

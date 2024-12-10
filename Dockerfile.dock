@@ -6,6 +6,7 @@ RUN mkdir -p /home/state && chown -R node:node /home/state
 WORKDIR /home/app
 
 # we exclude the package-lock.json
+COPY node_modules ./node_modules
 COPY package.json ./
 COPY bot.js ./
 COPY candidate.js ./
@@ -17,7 +18,7 @@ RUN mkdir ./state
 
 USER node
 # RUN npm install
-RUN yarn install
+# RUN yarn install
 
 # VOLUME [ "/data" ]
 # not needed, we mount state/{chainId}-state.json to /home/state/{chainId}-state.json

@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     build:
       context: ./dock-alert-bot
-      dockerfile: ../Dockerfile
+      dockerfile: ../Dockerfile.dock
     # the bot does not need to be exposed to the outside world
     # ports:
     #   - 3000:3000
